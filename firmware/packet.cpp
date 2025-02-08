@@ -99,7 +99,7 @@ void buildPingResponsePacket() {
 }
 
 void buildSensorResponsePacket() {
-  buildHeader(2, 0);
+  buildHeader(2, 1);
   Packet *p = (Packet *)out_buffer;
   p->dist1 = dist1;
   p->dist2 = dist2;
