@@ -113,9 +113,11 @@ volatile float throttle = 0.0;
 volatile float steering = 0.0;
 float throttle_deadzone = 0.05;
 
-float full_left_angle = 110.0;    // 舵机左转最大值
-float full_right_angle = 70.0;  // 舵机右转最大值
-float center_angle = 90;       // mid point
+float full_left_pos = 117;       // steer setpoint @ full left
+float full_left_angle = 110.0;   // steer angle @ full left
+float full_right_pos = 63;       // steer setpoint @ full right
+float full_right_angle = 70.0;   // steer angle @ full left
+float failsafe_angle = 90;       // mid point
 
 float steering_deadzone_rad = 1.0 / 180.0 * PI;
 volatile unsigned long last_pid_ts = 0;
@@ -297,10 +299,6 @@ void loop() {
   PIDControl();
 }
 
-float fmap(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
 // using global variable throttle and steering
 // set pwm for servo and throttle
 void actuateThrottle() {
@@ -334,27 +332,29 @@ void PIDControl() {
     analogWrite(DRIVE_PWMA, 0);
     digitalWrite(DRIVE_AIN1, LOW);
     digitalWrite(DRIVE_AIN2, LOW);
-    steerServo.write(center_angle);
+    steerServo.write(failsafe_angle);
 
     return;
   }
 
   actuateThrottle();
 
-  float steering_angle = (steering * 180.0 / PI);
-
-  
+  float steering_deg = (steering * 180.0 / PI);
 
   float target_angle = steeringMap(steering);
   target_angle = constrain(target_angle, full_right_angle, full_left_angle);
   
-  if (millis()- servo_ts >20){
-  steerServo.write(target_angle);
-  servo_ts = millis();
+  if (millis() - servo_ts > 20){
+    steerServo.write(target_angle);
+    servo_ts = millis();
   }
-  Serial.println(target_angle);
-  
+//  Serial.println(target_angle);
 }
+
 float steeringMap(float steering) {
-  return fmap(steering, -1.0, 1.0, full_right_angle, full_left_angle);
+  return fmap(steering, -PI, PI, full_right_angle, full_left_angle);
+}
+
+float fmap(float x, float in_min, float in_max, float out_min, float out_max) {
+  return ((x - in_min) * (out_max - out_min) / (in_max - in_min)) + out_min;
 }
