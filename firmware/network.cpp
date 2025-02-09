@@ -11,8 +11,8 @@ WiFiUDP Udp;
 ////////////
 
 //unsigned int localPort = 125;  // Local port to listen on
-IPAddress remoteIp(192, 168, 10, 102);  // Remote IP address (target device IP)                  CHANGE
-unsigned int remotePort=622;  // Remote port (where the target device is listening)         CHANGE 
+IPAddress remoteIp(192, 168, 10, 101);  // Remote IP address (target device IP)                  CHANGE
+unsigned int remotePort=58998;  // Remote port (where the target device is listening)         CHANGE 
 
 
 ////////////
@@ -70,4 +70,3 @@ void printMacAddress(byte mac[]) {
   }
   Serial.println();
 }
-

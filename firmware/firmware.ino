@@ -97,7 +97,7 @@ TFMiniS sensor3(0x13);
 TFMiniS sensor4(0x14);
 ///////////////////
 
-unsigned int localPort = 2390;
+unsigned int localPort = 28840;
 unsigned long last_packet_ts = 0;
 int encoder_s_pin = 14;
 
@@ -228,9 +228,9 @@ void loop() {
         // Serial.println("\n--- Reading Sensors ---");
 
         if(sensor1.readDistance(dist1)) {
-            // Serial.print("Front Distance=");
-            // Serial.print(dist1);
-            // Serial.println(" cm");
+//             Serial.print("Front Distance=");
+//             Serial.print(dist1);
+//             Serial.println(" cm");
         } else {
             Serial.println("Failed to read sensor 0x11");
         }
@@ -311,6 +311,9 @@ void actuateThrottle() {
     
     int pwmValue = abs(throttle) * 255;
     pwmValue = constrain(pwmValue, 0, 255);
+
+//    Serial.println(pwmValue);
+    
     if (throttle > 0) {
       digitalWrite(DRIVE_AIN1, HIGH);
       digitalWrite(DRIVE_AIN2, LOW);
@@ -339,20 +342,18 @@ void PIDControl() {
 
   actuateThrottle();
 
-  float steering_deg = (steering * 180.0 / PI);
-
-  float target_angle = steeringMap(steering);
-  target_angle = constrain(target_angle, full_right_angle, full_left_angle);
+  float target_steer_deg = steering * 180./PI;
+  float target_pos = steeringPosition(target_steer_deg);
+  target_pos = constrain(target_pos, full_right_pos, full_left_pos);
   
   if (millis() - servo_ts > 20){
-    steerServo.write(target_angle);
+    steerServo.write(target_pos);
     servo_ts = millis();
   }
-//  Serial.println(target_angle);
 }
 
-float steeringMap(float steering) {
-  return fmap(steering, -PI, PI, full_right_angle, full_left_angle);
+float steeringPosition(float steering_deg) {
+  return fmap(steering_deg, full_right_angle, full_left_angle, full_right_pos, full_left_pos);
 }
 
 float fmap(float x, float in_min, float in_max, float out_min, float out_max) {
