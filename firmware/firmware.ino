@@ -91,10 +91,11 @@ public:
     }
 };
 
-TFMiniS sensor1(0x11);
-TFMiniS sensor2(0x12);
-TFMiniS sensor3(0x13);
-TFMiniS sensor4(0x14);
+// front left right back
+TFMiniS sensor1(0x13);
+TFMiniS sensor2(0x14);
+TFMiniS sensor3(0x11);
+TFMiniS sensor4(0x12);
 ///////////////////
 
 unsigned int localPort = 28840;
@@ -114,9 +115,9 @@ volatile float steering = 0.0;
 float throttle_deadzone = 0.05;
 
 float full_left_pos = 117;       // steer setpoint @ full left
-float full_left_angle = 110.0;   // steer angle @ full left
+float full_left_angle = 20.0;   // steer angle @ full left
 float full_right_pos = 63;       // steer setpoint @ full right
-float full_right_angle = 70.0;   // steer angle @ full left
+float full_right_angle = -20.0                                ;   // steer angle @ full left
 float failsafe_angle = 90;       // mid point
 
 float steering_deadzone_rad = 1.0 / 180.0 * PI;
@@ -221,46 +222,46 @@ void setupWifi() {
 unsigned long periodic_print_1hz_ts = 0;
 
 void loop() {
-  static unsigned long lastRead = 0;
+    static unsigned long lastRead = 0;
     
-    if(millis() - lastRead >= 20) { ///////////////////////////////////////////////////////////////////////////////   send/1s, need to change from 1000 to 10 for 100hz
-        
-        // Serial.println("\n--- Reading Sensors ---");
-
-        if(sensor1.readDistance(dist1)) {
-//             Serial.print("Front Distance=");
-//             Serial.print(dist1);
-//             Serial.println(" cm");
-        } else {
-            Serial.println("Failed to read sensor 0x11");
-        }
-
-        if(sensor2.readDistance(dist2)) {
-            // Serial.print("Left Distance=");
-            // Serial.print(dist2);
-            // Serial.println(" cm");
-        } else {
-            Serial.println("Failed to read sensor 0x12");
-        }
-
-        if(sensor3.readDistance(dist3)) {
-            // Serial.print("Back Distance=");
-            // Serial.print(dist3);
-            // Serial.println(" cm");
-        } else {
-            Serial.println("Failed to read sensor 0x13");
-        }
-
-        if(sensor4.readDistance(dist4)) {
-            // Serial.print("Right Distance=");
-            // Serial.print(dist4);
-            // Serial.println(" cm");
-        } else {
-            Serial.println("Failed to read sensor 0x14");
-        }
-
-        lastRead = millis();
-    }
+//    if(millis() - lastRead >= 20) { ///////////////////////////////////////////////////////////////////////////////   send/1s, need to change from 1000 to 10 for 100hz
+//        
+//        // Serial.println("\n--- Reading Sensors ---");
+//
+//        if(sensor1.readDistance(dist1)) {
+////             Serial.print("Front Distance=");
+////             Serial.print(dist1);
+////             Serial.println(" cm");
+//        } else {
+//            Serial.println("Failed to read sensor 0x11");
+//        }
+//
+//        if(sensor2.readDistance(dist2)) {
+//            // Serial.print("Left Distance=");
+//            // Serial.print(dist2);
+//            // Serial.println(" cm");
+//        } else {
+//            Serial.println("Failed to read sensor 0x12");
+//        }
+//
+//        if(sensor3.readDistance(dist3)) {
+//            // Serial.print("Back Distance=");
+//            // Serial.print(dist3);
+//            // Serial.println(" cm");
+//        } else {
+//            Serial.println("Failed to read sensor 0x13");
+//        }
+//
+//        if(sensor4.readDistance(dist4)) {
+//            // Serial.print("Right Distance=");
+//            // Serial.print(dist4);
+//            // Serial.println(" cm");
+//        } else {
+//            Serial.println("Failed to read sensor 0x14");
+//        }
+//
+//        lastRead = millis();
+//    }
 
   led.update();
   //  Serial.println(millis() - loop_time);
@@ -344,11 +345,15 @@ void PIDControl() {
 
   float target_steer_deg = steering * 180./PI;
   float target_pos = steeringPosition(target_steer_deg);
-  target_pos = constrain(target_pos, full_right_pos, full_left_pos);
+  float constrained_pos = constrain(target_pos, full_right_pos, full_left_pos);
+
+  Serial.println(target_pos);
   
   if (millis() - servo_ts > 20){
-    steerServo.write(target_pos);
+    steerServo.write(constrained_pos);
     servo_ts = millis();
+
+//    Serial.println(target_pos);
   }
 }
 
