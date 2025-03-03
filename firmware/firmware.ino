@@ -11,85 +11,9 @@
 #include "packet.h"
 #include "pwm.h"
 #include "status_light.h"
+#include "tfmini_s.h"
 
 uint16_t dist1, dist2, dist3, dist4;
-
-class TFMiniS {
-private:
-    uint8_t addr;
-    
-    bool sendCommand(uint8_t* cmd, uint8_t len, const char* cmdName, uint16_t delayTime = 10) {
-        Wire.beginTransmission(addr);
-        Wire.write(cmd, len);
-        uint8_t error = Wire.endTransmission();
-        
-        delay(delayTime);
-        return true;
-    }
-
-public:
-    TFMiniS(uint8_t address) : addr(address) {}
-
-    void begin() {
-        Serial.print("\nInitializing TFMini-S at address 0x");
-        Serial.println(addr, HEX);
-        
-        uint8_t resetCmd[] = {0x5A, 0x04, 0x02, 0x60};
-        if(!sendCommand(resetCmd, 4, "reset", 100)) {
-            Serial.println("Reset failed");
-            return;
-        }
-
-        uint8_t i2cModeCmd[] = {0x5A, 0x05, 0x0A, 0x01, 0x6A};
-        if(!sendCommand(i2cModeCmd, 5, "set I2C mode", 100)) {
-            Serial.println("Set I2C mode failed");
-            return;
-        }
-
-        uint8_t formatCmd[] = {0x5A, 0x05, 0x05, 0x01, 0x65};
-        if(!sendCommand(formatCmd, 5, "set format", 100)) {
-            Serial.println("Set format failed");
-            return;
-        }
-
-        uint8_t saveCmd[] = {0x5A, 0x04, 0x11, 0x6F};
-        if(!sendCommand(saveCmd, 4, "save settings", 2000)) {
-            Serial.println("Save settings failed");
-            return;
-        }
-
-        Serial.print("Initialization complete for sensor at 0x");
-        Serial.println(addr, HEX);
-    }
-
-    bool readDistance(uint16_t &distance) {
-        uint8_t getDataCmd[] = {0x5A, 0x05, 0x00, 0x01, 0x60};
-        if(!sendCommand(getDataCmd, 5, "get data", 1)) {
-            return false;
-        }
-
-        if(Wire.requestFrom(addr, (uint8_t)9) != 9) {
-            Serial.print("Failed to read from sensor 0x");
-            Serial.println(addr, HEX);
-            return false;
-        }
-
-        uint8_t buffer[9];
-        for(int i = 0; i < 9; i++) {
-            buffer[i] = Wire.read();
-        }
-
-        if(buffer[0] != 0x59 || buffer[1] != 0x59) {
-            Serial.print("Invalid frame header from sensor 0x");
-            Serial.println(addr, HEX);
-            return false;
-        }
-
-        distance = buffer[2] | (buffer[3] << 8);
-        
-        return true;
-    }
-};
 
 // front left right back
 TFMiniS sensor1(0x13);
@@ -117,7 +41,7 @@ float throttle_deadzone = 0.05;
 float full_left_pos = 117;       // steer setpoint @ full left
 float full_left_angle = 20.0;   // steer angle @ full left
 float full_right_pos = 63;       // steer setpoint @ full right
-float full_right_angle = -20.0                                ;   // steer angle @ full left
+float full_right_angle = -20.0;   // steer angle @ full left
 float failsafe_angle = 90;       // mid point
 
 float steering_deadzone_rad = 1.0 / 180.0 * PI;
@@ -134,8 +58,8 @@ void setup() {
 #ifdef _SAMD21_ADC_COMPONENT_
   ADC->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV32_Val;
   while (ADC->STATUS.bit.SYNCBUSY == 1);
-
 #endif
+
   Serial.begin(115200);
 
   Serial.print("Connecting to Wi-Fi...");
@@ -154,8 +78,6 @@ void setup() {
     Udp.begin(localPort);  // Begin UDP on the specified local port
     Serial.print("Local port: ");
     Serial.println(localPort);
-
-
 
     Wire.begin();
     Wire.setClock(400000);
@@ -346,8 +268,6 @@ void PIDControl() {
   float target_steer_deg = steering * 180./PI;
   float target_pos = steeringPosition(target_steer_deg);
   float constrained_pos = constrain(target_pos, full_right_pos, full_left_pos);
-
-  Serial.println(target_pos);
   
   if (millis() - servo_ts > 20){
     steerServo.write(constrained_pos);
