@@ -16,10 +16,10 @@
 uint16_t dist1, dist2, dist3, dist4;
 
 // front left right back
-TFMiniS sensor1(0x13);
-TFMiniS sensor2(0x14);
-TFMiniS sensor3(0x11);
-TFMiniS sensor4(0x12);
+TFMiniS front_sensor(0x13);
+TFMiniS left_sensor(0x12);
+TFMiniS right_sensor(0x10);
+TFMiniS back_sensor(0x11);
 ///////////////////
 
 unsigned int localPort = 28840;
@@ -28,7 +28,7 @@ int encoder_s_pin = 14;
 
 Servo steerServo;
 
-const int DRIVE_AIN1 = 4;  
+const int DRIVE_AIN1 = 4;
 const int DRIVE_AIN2 = 5;
 const int DRIVE_PWMA = 6;
 const int DRIVE_STBY = 7;
@@ -39,9 +39,9 @@ volatile float steering = 0.0;
 float throttle_deadzone = 0.05;
 
 float full_left_pos = 117;       // steer setpoint @ full left
-float full_left_angle = 20.0;   // steer angle @ full left
+float full_left_angle = 20.0;    // steer angle @ full left
 float full_right_pos = 63;       // steer setpoint @ full right
-float full_right_angle = -20.0;   // steer angle @ full left
+float full_right_angle = -20.0;  // steer angle @ full left
 float failsafe_angle = 90;       // mid point
 
 float steering_deadzone_rad = 1.0 / 180.0 * PI;
@@ -57,41 +57,40 @@ StatusLed led;
 void setup() {
 #ifdef _SAMD21_ADC_COMPONENT_
   ADC->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV32_Val;
-  while (ADC->STATUS.bit.SYNCBUSY == 1);
+  while (ADC->STATUS.bit.SYNCBUSY == 1)
+    ;
 #endif
 
   Serial.begin(115200);
 
   Serial.print("Connecting to Wi-Fi...");
-    WiFi.begin(ssid, pass);
-    while (WiFi.status() != WL_CONNECTED) {
-      delay(1000);  // Wait for 1 second before retrying
-      Serial.print(".");
-    }
+  WiFi.begin(ssid, pass);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);  // Wait for 1 second before retrying
+    Serial.print(".");
+  }
 
-    // Print network data once connected
-    Serial.println("\nConnected to Wi-Fi!");
-    printWifiData();
-    printCurrentNet();
+  // Print network data once connected
+  Serial.println("\nConnected to Wi-Fi!");
+  printWifiData();
+  printCurrentNet();
 
-    // Start UDP communication
-    Udp.begin(localPort);  // Begin UDP on the specified local port
-    Serial.print("Local port: ");
-    Serial.println(localPort);
+  // Start UDP communication
+  Udp.begin(localPort);  // Begin UDP on the specified local port
+  Serial.print("Local port: ");
+  Serial.println(localPort);
 
-    Wire.begin();
-    Wire.setClock(400000);
+  Wire.begin();
+  Wire.setClock(400000);
 
-    Serial.println("\nTFMini-S I2C Reader");
+  // Serial.println("\nTFMini-S I2C Reader");
 
-    sensor1.begin();
-    sensor2.begin();
-    sensor3.begin();
-    sensor4.begin();
+  front_sensor.begin();
+  left_sensor.begin();
+  right_sensor.begin();
+  back_sensor.begin();
 
   ///////////////////
-
-
 
   // Enable motor driver
   pinMode(DRIVE_AIN1, OUTPUT);
@@ -99,7 +98,7 @@ void setup() {
   pinMode(DRIVE_PWMA, OUTPUT);
   pinMode(DRIVE_STBY, OUTPUT);
   digitalWrite(DRIVE_STBY, HIGH);
-  steerServo.attach(10);  
+  steerServo.attach(10);
 
   pinMode(encoder_s_pin, INPUT);
 
@@ -144,46 +143,46 @@ void setupWifi() {
 unsigned long periodic_print_1hz_ts = 0;
 
 void loop() {
-    static unsigned long lastRead = 0;
-    
-//    if(millis() - lastRead >= 20) { ///////////////////////////////////////////////////////////////////////////////   send/1s, need to change from 1000 to 10 for 100hz
-//        
-//        // Serial.println("\n--- Reading Sensors ---");
-//
-//        if(sensor1.readDistance(dist1)) {
-////             Serial.print("Front Distance=");
-////             Serial.print(dist1);
-////             Serial.println(" cm");
-//        } else {
-//            Serial.println("Failed to read sensor 0x11");
-//        }
-//
-//        if(sensor2.readDistance(dist2)) {
-//            // Serial.print("Left Distance=");
-//            // Serial.print(dist2);
-//            // Serial.println(" cm");
-//        } else {
-//            Serial.println("Failed to read sensor 0x12");
-//        }
-//
-//        if(sensor3.readDistance(dist3)) {
-//            // Serial.print("Back Distance=");
-//            // Serial.print(dist3);
-//            // Serial.println(" cm");
-//        } else {
-//            Serial.println("Failed to read sensor 0x13");
-//        }
-//
-//        if(sensor4.readDistance(dist4)) {
-//            // Serial.print("Right Distance=");
-//            // Serial.print(dist4);
-//            // Serial.println(" cm");
-//        } else {
-//            Serial.println("Failed to read sensor 0x14");
-//        }
-//
-//        lastRead = millis();
-//    }
+  static unsigned long lastRead = 0;
+
+  if (millis() - lastRead >= 20) {  ///////////////////////////////////////////////////////////////////////////////   send/1s, need to change from 1000 to 10 for 100hz
+
+    // Serial.println("\n--- Reading Sensors ---");
+
+    if (front_sensor.readDistance(dist1)) {
+      // Serial.print("Front Distance=");
+      // Serial.print(dist1);
+      // Serial.println(" cm");
+    } else {
+      Serial.println("Failed to read front sensor");
+    }
+
+    if (left_sensor.readDistance(dist2)) {
+      // Serial.print("Left Distance=");
+      // Serial.print(dist2);
+      // Serial.println(" cm");
+    } else {
+      Serial.println("Failed to read left sensor");
+    }
+
+    if (right_sensor.readDistance(dist3)) {
+      // Serial.print("Right Distance=");
+      // Serial.print(dist3);
+      // Serial.println(" cm");
+    } else {
+      Serial.println("Failed to read right sensor");
+    }
+
+    if (back_sensor.readDistance(dist4)) {
+      // Serial.print("Back Distance=");
+      // Serial.print(dist4);
+      // Serial.println(" cm");
+    } else {
+      Serial.println("Failed to read back sensor");
+    }
+
+    lastRead = millis();
+  }
 
   led.update();
   //  Serial.println(millis() - loop_time);
@@ -231,12 +230,12 @@ void actuateThrottle() {
     digitalWrite(DRIVE_AIN1, LOW);
     digitalWrite(DRIVE_AIN2, LOW);
   } else {
-    
+
     int pwmValue = abs(throttle) * 255;
     pwmValue = constrain(pwmValue, 0, 255);
 
-//    Serial.println(pwmValue);
-    
+    //    Serial.println(pwmValue);
+
     if (throttle > 0) {
       digitalWrite(DRIVE_AIN1, HIGH);
       digitalWrite(DRIVE_AIN2, LOW);
@@ -265,15 +264,15 @@ void PIDControl() {
 
   actuateThrottle();
 
-  float target_steer_deg = steering * 180./PI;
+  float target_steer_deg = steering * 180. / PI;
   float target_pos = steeringPosition(target_steer_deg);
   float constrained_pos = constrain(target_pos, full_right_pos, full_left_pos);
-  
-  if (millis() - servo_ts > 20){
+
+  if (millis() - servo_ts > 20) {
     steerServo.write(constrained_pos);
     servo_ts = millis();
 
-//    Serial.println(target_pos);
+    //    Serial.println(target_pos);
   }
 }
 
