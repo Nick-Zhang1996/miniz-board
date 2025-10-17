@@ -119,7 +119,7 @@ void loop() {
     int len = Udp.read(in_buffer, PACKET_SIZE);
     if (len != PACKET_SIZE){ Serial.println("err reading packet size"); }
     // NOTE no reply packet
-    //parsePacket();
+    parsePacket();
     Packet *p = (Packet *) in_buffer;
     //Serial.print(" seq no ");
     //Serial.println(p->seq_no);

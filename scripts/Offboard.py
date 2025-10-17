@@ -1,7 +1,7 @@
 # code to communicate with offboard miniz
 # An updated version of this file can be found at:
 # https://github.com/Nick-Zhang1996/miniz-board/blob/main/Offboard.py
-from common import *
+from .common import *
 import socket
 from struct import pack, unpack
 import numpy as np

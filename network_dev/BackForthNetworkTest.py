@@ -1,13 +1,20 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from math import pi,radians,degrees,sin
-from common import *
-from Offboard import Offboard
 from time import time,sleep
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scripts.common import *
+from scripts.Offboard import Offboard
+
 class NetworkTest(PrintObject):
     def __init__(self):
-        self.car = Offboard("192.168.10.102",2390)
+        self.car = Offboard("192.168.10.13",2390)
+        self.car.debug = True
+        self.debug = True
         return
 
     def main(self):
