@@ -1,8 +1,8 @@
 
 #include "network.h"
 // network setting
-char ssid[] = "TP-LINK_F4D4";
-char pass[] = "15291356";
+char ssid[] = "DCSL";
+char pass[] = "panos_is_boss";
 int status = WL_IDLE_STATUS;
 WiFiUDP Udp;
 
