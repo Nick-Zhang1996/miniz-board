@@ -10,36 +10,39 @@
 #include "pwm.h"
 #include "status_light.h"
 
-unsigned int localPort = 2390;
+constexpr unsigned int localPort = 2390;
 unsigned long last_packet_ts = 0;
 
 // board pin layout
-int encoder_s_pin = 14;
+constexpr int encoder_s_pin = 14;
 
 // NOTE this is inconsistent with schematic
 // left
-int steer_rev_pin = 9; // originally 2 -> changed to 9
+constexpr int steer_rev_pin = 9; // originally 2 -> changed to 9
 // right
-int steer_fwd_pin = 10; // originally 3 -> changed to 10
+constexpr int steer_fwd_pin = 10; // originally 3 -> changed to 10
 
-int old_steer_rev_pin = 2;
-int old_steer_fwd_pin = 3;
+constexpr int old_steer_rev_pin = 2;
+constexpr int old_steer_fwd_pin = 3;
 
-int drive_rev_pin = 5;
-int drive_fwd_pin = 6;
+constexpr int drive_rev_pin = 5;
+constexpr int drive_fwd_pin = 6;
 
 // electronics calibration
 // [-1,1]
 volatile float throttle = 0.0;
 // left positive, radians
 volatile float steering = 0.0;
-float throttle_deadzone = 0.05;
+constexpr float throttle_deadzone = 0.05;
 
-float full_left_angle_rad = 26.1 / 180.0 * PI;
-float full_right_angle_rad = -26.1 / 180.0 * PI;
-float full_left_encoder_value = 630.0;
-float full_right_encoder_value = 410.0;
-float steering_deadzone_rad = 1.0 / 180.0 * PI;
+constexpr float full_left_angle_rad = 27.0 / 180.0 * PI;
+constexpr float full_right_angle_rad = -27.0 / 180.0 * PI;
+// Encoder seems different on each car, below are default values for audi cars
+// This gets calibrated at startup
+float full_left_encoder_value = 630.0; 
+float full_right_encoder_value = 410.0; 
+constexpr float steering_deadzone_rad = 1.0 / 180.0 * PI;
+
 volatile unsigned long last_pid_ts = 0;
 float last_err = 0.0;
 float steering_integral = 0.0;
@@ -76,6 +79,8 @@ void setup() {
   Udp.begin(localPort);
   //timerSetup();
   PWM::setup();
+
+  calibrateEncoder();
 }
 
 void blinkTwice() {
@@ -102,8 +107,8 @@ void setupWifi() {
     // Connect to WPA/WPA2 network:
     status = WiFi.begin(ssid, pass);
 
-    // wait 10 seconds for connection:
-    delay(10000);
+    // wait 3 seconds for connection:
+    delay(3000);
   }
   led.blink();
 
@@ -112,6 +117,35 @@ void setupWifi() {
 }
 
 unsigned long periodic_print_1hz_ts = 0;
+
+void calibrateEncoder(){
+    // Turn Left
+    PWM::set(steer_rev_pin, 0.5);
+    PWM::set(steer_fwd_pin, 0);
+    delay(500);
+    uint32_t val_sum = 0;
+    for (int i=0; i<100; i++){
+      val_sum += analogRead(encoder_s_pin);
+    }
+    full_left_encoder_value = val_sum/100.0;
+    // Turn Right
+    PWM::set(steer_fwd_pin, 0.5);
+    PWM::set(steer_rev_pin, 0);
+    delay(500);
+    val_sum = 0;
+    for (int i=0; i<100; i++){
+      val_sum += analogRead(encoder_s_pin);
+    }
+    full_right_encoder_value = val_sum/100.0;
+    PWM::set(steer_fwd_pin, 0);
+    PWM::set(steer_rev_pin, 0);
+    Serial.print("Encoder Calibration: left ");
+    Serial.print((int)full_left_encoder_value);
+    Serial.print(" right ");
+    Serial.println((int)full_right_encoder_value);
+
+}
+
 
 void loop() {
   led.update();
@@ -212,8 +246,6 @@ void PIDControl() {
   steering_measured =
       fmap(raw_encoder, full_left_encoder_value, full_right_encoder_value,
            full_left_angle_rad, full_right_angle_rad);
-  steering_measured =
-      constrain(steering_measured, full_right_angle_rad, full_left_angle_rad);
 
   // error in radians
   float err = steering - steering_measured;
@@ -251,11 +283,13 @@ void PIDControl() {
     PWM::set(steer_fwd_pin, 0);
     PWM::set(steer_rev_pin, 0);
   } else if (output > 0) {
+    // Turn Left
     // analogWrite(steer_rev_pin, constrain(err * param_steering_P, 0, 255));
     // analogWrite(steer_fwd_pin, 0);
     PWM::set(steer_rev_pin, output);
     PWM::set(steer_fwd_pin, 0);
   } else if (output < 0) {
+    // Turn Right
     // analogWrite(steer_fwd_pin, constrain(-err * param_steering_P, 0, 255));
     // analogWrite(steer_rev_pin, 0);
     PWM::set(steer_fwd_pin, -output);
